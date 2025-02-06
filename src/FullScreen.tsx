@@ -1,9 +1,9 @@
 //@ts-nocheck
+
 import React, { useState, useRef, useEffect } from "react";
 
 const FullscreenImageSlider = () => {
   const [index, setIndex] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [started, setStarted] = useState(false);
   const containerRef = useRef(null);
 
@@ -29,14 +29,13 @@ const FullscreenImageSlider = () => {
       if (containerRef.current.requestFullscreen) {
         containerRef.current.requestFullscreen();
       } else if (containerRef.current.webkitRequestFullscreen) {
-        // iPhone/iPad Safari
         containerRef.current.webkitRequestFullscreen();
       }
     }
     setStarted(true);
   };
 
-  // Detect Smart TV and force fullscreen
+  // Detect Smart TV and force fullscreen with correct layout
   useEffect(() => {
     const isSmartTV =
       /(smart-tv|smarttv|webos|tizen|netcast|googletv|applewebkit|silk)/i.test(
@@ -52,56 +51,23 @@ const FullscreenImageSlider = () => {
     }
   }, []);
 
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(
-        !!(document.fullscreenElement || document.webkitFullscreenElement)
-      );
-    };
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    document.addEventListener(
-      "webkitfullscreenchange",
-      handleFullscreenChange
-    );
-
-    return () => {
-      document.removeEventListener(
-        "fullscreenchange",
-        handleFullscreenChange
-      );
-      document.removeEventListener(
-        "webkitfullscreenchange",
-        handleFullscreenChange
-      );
-    };
-  }, []);
-
   return (
     <div
       ref={containerRef}
-      className="relative bg-black overflow-hidden"
-      style={{ width: "100vw", height: "100vh" }}
+      className="relative bg-black overflow-hidden w-screen h-screen"
     >
       {started ? (
         <>
-          <div
-            className="flex transition-transform duration-500 ease-in-out"
-            style={{
-              transform: `translateX(-${index * 100}vw)`,
-              width: `${images.length * 100}vw`,
-              display: "flex",
-              overflow: "hidden",
-            }}
-          >
-            {images.map((img, i) => (
-              <img
-                key={i}
-                src={img}
-                alt={`Slide ${i + 1}`}
-                className="w-screen h-screen object-cover"
-              />
-            ))}
-          </div>
+          {images.map((img, i) => (
+            <img
+              key={i}
+              src={img}
+              alt={`Slide ${i + 1}`}
+              className={`absolute w-full h-full object-cover transition-opacity duration-1000 ${
+                i === index ? "opacity-100 z-10" : "opacity-0 z-0"
+              }`}
+            />
+          ))}
         </>
       ) : (
         <button
