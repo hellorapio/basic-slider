@@ -1,9 +1,8 @@
 //@ts-nocheck
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 const FullscreenImageSlider = () => {
-  const [index, setIndex] = useState<number>(0);
-  const sliderRef = useRef(null);
+  const [index, setIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
   const images = [
@@ -12,7 +11,6 @@ const FullscreenImageSlider = () => {
     "https://www.bkacontent.com/wp-content/uploads/2016/06/Depositphotos_31146757_l-2015.jpg",
   ];
 
-  // Auto-slide every 3 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setIndex((prevIndex) => (prevIndex + 1) % images.length);
@@ -20,52 +18,76 @@ const FullscreenImageSlider = () => {
     return () => clearInterval(interval);
   }, [images.length]);
 
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () =>
-      document.removeEventListener(
-        "fullscreenchange",
-        handleFullscreenChange
-      );
-  }, []);
-
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
       if (containerRef.current.requestFullscreen) {
         containerRef.current.requestFullscreen();
-      } else if (containerRef.current.mozRequestFullScreen) {
-        containerRef.current.mozRequestFullScreen();
       } else if (containerRef.current.webkitRequestFullscreen) {
+        // iPhone/iPad Safari
         containerRef.current.webkitRequestFullscreen();
-      } else if (containerRef.current.msRequestFullscreen) {
-        containerRef.current.msRequestFullscreen();
       }
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();
-      } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
       } else if (document.webkitExitFullscreen) {
+        // iPhone/iPad Safari
         document.webkitExitFullscreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
       }
     }
   };
+
+  // Detect Smart TV browser and apply fullscreen fix
+  useEffect(() => {
+    const isSmartTV =
+      /(smart-tv|smarttv|webos|tizen|netcast|googletv|applewebkit|silk)/i.test(
+        navigator.userAgent
+      );
+    if (isSmartTV) {
+      document.body.style.overflow = "hidden";
+      containerRef.current.style.position = "fixed";
+      containerRef.current.style.width = "100vw";
+      containerRef.current.style.height = "100vh";
+      containerRef.current.style.top = "0";
+      containerRef.current.style.left = "0";
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(
+        !!(document.fullscreenElement || document.webkitFullscreenElement)
+      );
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener(
+      "webkitfullscreenchange",
+      handleFullscreenChange
+    );
+    return () => {
+      document.removeEventListener(
+        "fullscreenchange",
+        handleFullscreenChange
+      );
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange
+      );
+    };
+  }, []);
+
   return (
     <div
       ref={containerRef}
-      className="relative w-screen h-screen bg-black overflow-hidden"
+      className="relative bg-black overflow-hidden"
+      style={{ width: "100vw", height: "100vh" }}
     >
       <div
-        ref={sliderRef}
         className="flex transition-transform duration-500 ease-in-out"
         style={{
           transform: `translateX(-${index * 100}vw)`,
           width: `${images.length * 100}vw`,
+          display: "flex",
+          overflow: "hidden",
         }}
       >
         {images.map((img, i) => (
